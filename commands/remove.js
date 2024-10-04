@@ -14,14 +14,6 @@ module.exports = {
                 .setName("regex")
                 .setDescription("regex to compare messages with")
                 .setRequired(true)
-        )
-        .addIntegerOption((op) =>
-            op
-                .setName("severity")
-                .setDescription(
-                    "mention severity of regex matching (low(1)-high(3))"
-                )
-                .setRequired(true)
         ),
     /**@param {ChatInputCommandInteraction} i */
     async execute(i) {
@@ -30,15 +22,14 @@ module.exports = {
                 i.member.roles.highest.position >=
                 i.guild.roles.cache.get(min).position
             ) {
-                profileModel.findOneAndDelete({
-                    level: i.options.get("severity").value,
-                    guildname: String(i.guild.id),
+                await profileModel.findOneAndDelete({
                     expr: i.options.get("regex").value,
+                    guildname: String(i.guild.id),
                 });
                 await i.reply("regex removed!");
             } else await i.reply("you dont have the authority to do this.");
         } catch (err) {
-            console.log("error!");
+            console.log(`error! ${err}`);
             return;
         }
     },

@@ -30,7 +30,20 @@ module.exports = {
                 i.member.roles.highest.position >=
                 i.guild.roles.cache.get(min).position
             ) {
-                profileModel.insertMany([
+                let x = await profileModel.findOne({
+                    guildname: String(i.guild.id),
+                    expr: i.options.get("regex").value,
+                });
+                if (x != null) {
+                    await profileModel.findOneAndDelete({
+                        guildname: String(i.guild.id),
+                        expr: i.options.get("regex").value,
+                    });
+                    await i.reply(
+                        "regex already exists! its value will be modified..."
+                    );
+                }
+                await profileModel.insertMany([
                     {
                         level: i.options.get("severity").value,
                         guildname: String(i.guild.id),
@@ -40,7 +53,7 @@ module.exports = {
                 await i.reply("regex added!");
             } else await i.reply("you dont have the authority to do this.");
         } catch (err) {
-            console.log("error!");
+            console.log(`error! ${err}`);
             return;
         }
     },
