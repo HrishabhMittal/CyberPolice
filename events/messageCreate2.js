@@ -1,6 +1,12 @@
-const { Events, Message, ChannelType } = require("discord.js");
+const {
+    Events,
+    Message,
+    ChannelType,
+    PermissionsBitField,
+} = require("discord.js");
 require("dotenv").config();
 const logChannelModel = require("../models/logChannelSchema");
+const roleModel = require("../models/roleSchema");
 module.exports = {
     name: Events.MessageCreate,
     /**@param {Message} msg */
@@ -21,40 +27,66 @@ module.exports = {
                     msg.guild.id
                 );
                 await msg.channel.send("all commands registered!");
+
+                let entry = await roleModel.findOne({
+                    guildname: msg.guild.id,
+                });
+                let roleId;
+                if (entry != null && msg.guild.roles.cache.has(entry.role)) {
+                    await msg.channel.send(
+                        "role already exists for bot manager..."
+                    );
+                } else {
+                    if (entry) {
+                        await roleModel.findOneAndDelete({
+                            guildname: msg.guild.id,
+                        });
+                    }
+                    await msg.channel.send("creating role for bot manager...");
+                    let x = await msg.guild.roles.create({
+                        name: "Police",
+                        color: "Blue",
+                    });
+                    await roleModel.create({
+                        role: x.id,
+                        guildname: msg.guild.id,
+                    });
+                    roleId = x.id;
+                }
+
+                entry = await logChannelModel.findOne({
+                    guildname: msg.guild.id,
+                });
                 if (
-                    msg.guild.channels.cache.find(
-                        (channel) => channel.name === "CyberPolice-logs"
-                    )
+                    entry != null &&
+                    msg.guild.channels.cache.has(entry.channel)
                 ) {
                     await msg.channel.send(
                         "channel already exists for logs..."
                     );
                 } else {
+                    if (entry) {
+                        await logChannelModel.findOneAndDelete({
+                            guildname: msg.guild.id,
+                        });
+                    }
                     await msg.channel.send("creating channel for logs...");
-                    await msg.guild.channels.create({
+                    let x = await msg.guild.channels.create({
                         name: "CyberPolice-logs",
                         type: ChannelType.GuildText,
+                        permissionOverwrites: [
+                            {
+                                id: msg.guild.roles.everyone.id,
+                                deny: [PermissionsBitField.Flags.ViewChannel],
+                            },
+                            {
+                                id: roleId,
+                                allow: [PermissionsBitField.Flags.ViewChannel],
+                            },
+                        ],
                     });
-                }
-                let channelId = msg.guild.channels.cache.find(
-                    (channel) => channel.name === "CyberPolice-logs"
-                ).id;
-                let entry = await logChannelModel.findOne({
-                    guildname: msg.guild.id,
-                });
-                if (entry != null) {
-                    await logChannelModel.findOneAndUpdate(
-                        {
-                            guildname: msg.guild.id,
-                        },
-                        {
-                            guildname: msg.guild.id,
-                            channel: channelId,
-                        }
-                    );
-                } else {
                     await logChannelModel.create({
-                        channel: channelId,
+                        channel: x.id,
                         guildname: msg.guild.id,
                     });
                 }

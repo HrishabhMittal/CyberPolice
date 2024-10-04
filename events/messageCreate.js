@@ -1,5 +1,6 @@
 const { Events, Message } = require("discord.js");
 const profileModel = require("../models/profileSchema");
+const channelModel = require("../models/logChannelSchema");
 require("dotenv").config();
 module.exports = {
     name: Events.MessageCreate,
@@ -12,6 +13,14 @@ module.exports = {
             const { expr, level } = i;
             if (content.match(RegExp(expr)) != null) {
                 await msg.delete();
+                const channel = await channelModel.findOne({
+                    guildname: msg.guild.id,
+                });
+                msg.guild.channels.cache
+                    .get(channel.channel)
+                    .send(
+                        `@${msg.author.tag} violated regex ${expr} of severity level ${level}!`
+                    );
                 if (Number(level) == 2) {
                     await msg.author.send(
                         `THE FOLLOWING MESSAGE VIOLATED THE REGEX: ${msg.content}`

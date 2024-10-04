@@ -3,6 +3,8 @@ const {
     SlashCommandBuilder,
     ChatInputCommandInteraction,
 } = require("discord.js");
+const channelModel = require("../models/logChannelSchema");
+const roleModel = require("../models/roleSchema");
 require("dotenv").config();
 const { MIN_REGEX_ADDER_ROLE: min } = process.env;
 module.exports = {
@@ -26,10 +28,23 @@ module.exports = {
     /**@param {ChatInputCommandInteraction} i */
     async execute(i) {
         try {
+            let manager = await roleModel.findOne({
+                guildname: i.guild.id,
+            });
             if (
-                i.member.roles.highest.position >=
-                i.guild.roles.cache.get(min).position
+                i.member.roles.cache.has(manager.role) ||
+                i.member.id === i.guild.ownerId
             ) {
+                const channel = await channelModel.findOne({
+                    guildname: i.guild.id,
+                });
+                i.guild.channels.cache
+                    .get(channel.channel)
+                    .send(
+                        `added/updated regex:${
+                            i.options.get("regex").value
+                        } and severity ${i.options.get("severity").value}`
+                    );
                 let x = await profileModel.findOne({
                     guildname: String(i.guild.id),
                     expr: i.options.get("regex").value,

@@ -5,6 +5,6 @@ const roleSchema = new mongoose.Schema({
     guildname: { type: String, required: true },
 });
 
-const model = mongoose.model("db1", roleSchema);
+const model = mongoose.model("db2", roleSchema);
 
 module.exports = model;
